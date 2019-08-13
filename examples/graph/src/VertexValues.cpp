@@ -36,7 +36,7 @@ VertexValues<K,V>::VertexValues(std::string temp_directory, K key_count, V defau
 		ma_value_cache[i].valid = false;
 	}
 */
-
+	/////////////////////// Need to write walks //////////////////////////////
 	ValueItem* defaultv = (ValueItem*)aligned_alloc(512,sizeof(ValueItem)*1024*1024);
 	for ( int i = 0; i < 1024*1024; i++ ) {
 		defaultv[i].iteration = 0;
