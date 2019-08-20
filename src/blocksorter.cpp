@@ -230,15 +230,15 @@ BlockSorterThread<K,V>::BlockSorterThread(SortReduceTypes::Config<K,V>* config, 
 template <class K, class V>
 size_t 
 BlockSorterThread<K,V>::SortKV(void* buffer, size_t bytes, V (*update)(V,V)) {
-	printf("BlockSorterThread<K,V>::SortKV start.\n");
+	// printf("BlockSorterThread<K,V>::SortKV start.\n");
 	KvPair* tbuffer = (KvPair*)buffer;
 	size_t count = bytes/sizeof(KvPair);
-	printf("Sorting tbuffer...\n");
+	// printf("Sorting tbuffer...\n");
 	std::sort(tbuffer, tbuffer+count, BlockSorterThread<K,V>::CompareKV);
 
 	size_t out_size = 0;
 
-	printf("Merge tbuffer...\n");
+	// printf("Merge tbuffer...\n");
 	if ( update != NULL ) {
 		KvPair last_kvp = tbuffer[0];
 		for (size_t i = 1; i < count; i++ ) {
@@ -256,7 +256,7 @@ BlockSorterThread<K,V>::SortKV(void* buffer, size_t bytes, V (*update)(V,V)) {
 		out_size = count;
 	}
 
-	printf("BlockSorterThread<K,V>::SortKV end.\n");
+	// printf("BlockSorterThread<K,V>::SortKV end.\n");
 	return out_size*sizeof(KvPair);
 }
 

@@ -160,7 +160,7 @@ int main(int argc, char** argv) {
 			uint32_t key = std::get<0>(res);
 			wid_t val = std::get<1>(res);
 
-			printf( "\t\t++ SRR vertex %d : %d walks.\n", key, val );
+			// printf( "\t\t++ SRR vertex %d : %d walks.\n", key, val );
 			while ( !vertex_values->Update(key,val) ) ;
 
 			res = sr->Next();

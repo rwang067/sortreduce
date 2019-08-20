@@ -216,7 +216,7 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 			KvPair kvp = buf[i];
 			K key = kvp.key;
 			V val = kvp.val;
-			printf("  WT : key = %d, val = %d\n", (uint32_t)key, (uint32_t)val);
+			// printf("  WT : key = %d, val = %d\n", (uint32_t)key, (uint32_t)val);
 
 			if ( (size_t)key > vertex_count ) {
 				printf( "Skipping key %lu because it's >= %lu\n", (size_t)key, vertex_count );
@@ -226,7 +226,7 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 
 			size_t byte_offset = ((size_t)key)*sizeof(uint64_t);
 			if ( byte_offset < idx_buffer_offset || byte_offset + 2*sizeof(uint64_t) > idx_buffer_offset+idx_buffer_bytes ) {
-				printf( "Reading idx_buffer...\n");
+				// printf( "Reading idx_buffer...\n");
 				size_t byte_offset_aligned = byte_offset&(~0x3ff); // 1 KB alignment
 				pread(m_ridx_fd, idx_buffer, m_buffer_alloc_bytes, byte_offset_aligned);
 				idx_buffer_offset = byte_offset_aligned;
@@ -249,7 +249,7 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 					K index = (K)edgeval;
 					uint64_t edge_offset = byte_offset_1+(index*edge_element_bytes);
 					if ( edge_offset < edge_buffer_offset || edge_offset + edge_element_bytes > edge_buffer_offset+edge_buffer_bytes ) {
-						printf( "Reading edge_buffer....\n");
+						// printf( "Reading edge_buffer....\n");
 						size_t byte_offset_aligned = edge_offset&(~0x3ff); // 1 KB alignment
 						pread(m_matrix_fd, edge_buffer, m_buffer_alloc_bytes, byte_offset_aligned);
 						edge_buffer_offset = byte_offset_aligned;
@@ -260,7 +260,7 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 					size_t internal_offset = edge_offset - edge_buffer_offset;
 					//FIXME if the matrix format changes
 					K neighbor = *((K*)(((uint8_t*)edge_buffer)+internal_offset));
-					printf( "Dst vertex %d -- %dth neighbor.\n", (uint32_t)neighbor, (uint32_t)edgeval );
+					// printf( "Dst vertex %d -- %dth neighbor.\n", (uint32_t)neighbor, (uint32_t)edgeval );
 					
 					//add a walk here.
 					while (!ep->Update(neighbor, 1)) usleep(100);
@@ -268,7 +268,7 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 			}else{
 				for(size_t i = 0; i < val; i++){
 					K neighbor = rand()%vertex_count;
-					printf( "Dst vertex %d -- random vertex.\n", (uint32_t)neighbor );
+					// printf( "Dst vertex %d -- random vertex.\n", (uint32_t)neighbor );
 					
 					//add a walk here.
 					while (!ep->Update(neighbor, 1)) usleep(100);
