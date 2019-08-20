@@ -76,14 +76,14 @@ int main(int argc, char** argv) {
 		}
 
 		if ( cur_node == rnode ) {
-			if ( last_edge > redge ) {
-				printf( "edge order wrong! %ld -> %ld\n", last_edge, redge );
-				continue;
-			}
-			if ( last_edge > redge ) {
-				printf( "Error!! Dest edge not sorted!\n" ); // FIXME! rnode < cur_node already checks for this...
-				exit(1);
-			}
+			// if ( last_edge > redge ) {
+			// 	printf( "edge order wrong! %ld -> %ld\n", last_edge, redge );
+			// 	continue;
+			// }
+			// if ( last_edge > redge ) {
+			// 	printf( "Error!! Dest edge not sorted!\n" ); // FIXME! rnode < cur_node already checks for this...
+			// 	exit(1);
+			// }
 			if ( last_edge == redge ) continue;
 
 			if ( file32 ) {
