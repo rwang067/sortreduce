@@ -13,55 +13,40 @@
 #include "EdgeProcess.h"
 #include "VertexValues.h"
 
+typedef uint32_t wid_t;
 
-
-inline uint32_t vertex_update(uint32_t a, uint32_t b) { // a+b
-	float af = *(float*)&a;
-	float bf = *(float*)&b;
-	float tf = af+bf;
-	
-	uint32_t ret = *(uint32_t*)&tf;
+//merge walks of a same vertex
+inline wid_t vertex_update(wid_t a, wid_t b) { // a+b
+	printf( "Vertex_update a: %d b: %d\n", a, b);
+	wid_t ret = a + b;
 	return ret;
 }
-inline uint32_t edge_program(uint32_t vid, uint32_t value, uint32_t fanout) { // value/fanout
-	//printf( "Edge-program source: %x val: %x fanout: %x\n", vid, value, fanout);
-	float af = *(float*)&value;
-	float tf = af/(float)fanout;
-
-	uint32_t ret = *(uint32_t*)&tf;
+inline wid_t edge_program(uint32_t vid, wid_t value, uint32_t fanout) { // value/fanout
+	
+	wid_t ret = rand()%fanout;
+	// printf( "Edge-program vid: %d, outd: %d, walk%d forward to %dth neighbor. \n", vid, fanout, value, ret);
 
 	return ret;
 }
 
 size_t g_vertex_count = 1;
-inline uint32_t finalize_program(uint32_t oldval, uint32_t val) { /// val*0.85 + 0.15/|V|
-	float damp = 0.15/(float)g_vertex_count;
-	float af = *(float*)&val;
-	float tf = damp + af*0.85;
-	uint32_t ret = *(uint32_t*)&tf;
+inline wid_t finalize_program(wid_t oldval, wid_t val) { /// val*0.85 + 0.15/|V|
+	uint32_t ret = val;
 	return ret;
 }
 
-inline bool is_active(uint32_t old, uint32_t newv, bool marked) { // |newv-old| > 0.0001
+inline bool is_active(wid_t old, wid_t newv, bool marked) { // |newv-old| > 0.0001
 	if ( !marked ) return false;
 
-	float af = *(float*)&old;
-	float bf = *(float*)&newv;
-
-	if ( af > bf ) {
-		if (af-bf < 0.0001 ) return false;
-		else return true;
-	} else {
-		if (bf-af < 0.0001 ) return false;
-		else return true;
-	}
+	if(newv > 0) return true;
+	return false;
 }
 
 int main(int argc, char** argv) {
 	srand(time(0));
 
-	if ( argc < 4 ) {
-		fprintf(stderr, "usage: %s ridx matrix directory \n", argv[0] );
+	if ( argc < 6 ) {
+		fprintf(stderr, "usage: %s directory ridx matrix nwalks nsteps.\n", argv[0] );
 		exit(1);
 	}
 
@@ -69,13 +54,16 @@ int main(int argc, char** argv) {
 	char* idx_path = argv[2]; // path of beg_pos file
 	char* mat_path = argv[3]; // path of csr/csc file
 
+	int R = atoi(argv[4]);
+	int L = atoi(argv[5]);
+
 	int max_thread_count = 12;
 	int max_sr_thread_count = 8;
 	int max_vertexval_thread_count = 4;
 	int max_edgeproc_thread_count = 8;
-	if ( argc > 4 ) {
-		max_thread_count = atoi(argv[4]);
-	}
+	// if ( argc > 4 ) {
+	// 	max_thread_count = atoi(argv[4]);
+	// }
 	if ( max_thread_count >= 32 ) {
 		max_sr_thread_count = 28;
 		max_vertexval_thread_count = 8;
@@ -94,25 +82,24 @@ int main(int argc, char** argv) {
 	//conf->SetManagedBufferSize(1024*1024*4, 256); // 4 GiB
 
 
-	EdgeProcess<uint32_t,uint32_t>* edge_process = new EdgeProcess<uint32_t,uint32_t>(idx_path, mat_path, &edge_program);
+	EdgeProcess<uint32_t,wid_t>* edge_process = new EdgeProcess<uint32_t,wid_t>(idx_path, mat_path, &edge_program);
 	size_t vertex_count = edge_process->GetVertexCount();
-	printf( "vertex_count = %lx \n", vertex_count );
+	printf( "vertex_count = %d \n", vertex_count );
 	g_vertex_count = vertex_count;
-	float init_val = 1.0/(float)vertex_count;
-	VertexValues<uint32_t,uint32_t>* vertex_values = new VertexValues<uint32_t,uint32_t>(tmp_dir, vertex_count, *(uint32_t*)&init_val, &is_active, &finalize_program, max_vertexval_thread_count);
+	VertexValues<uint32_t,wid_t>* vertex_values = new VertexValues<uint32_t,wid_t>(tmp_dir, vertex_count, 0, &is_active, &finalize_program, max_vertexval_thread_count);
 
 
 
 	int iteration = 0;
 	while ( true ) {
 
-		SortReduceTypes::Config<uint32_t,uint32_t>* conf =
-			new SortReduceTypes::Config<uint32_t,uint32_t>(tmp_dir, "", max_sr_thread_count);
+		SortReduceTypes::Config<uint32_t,wid_t>* conf =
+			new SortReduceTypes::Config<uint32_t,wid_t>(tmp_dir, "", max_sr_thread_count);
 		conf->quiet = true;
 		conf->SetUpdateFunction(&vertex_update);
 
-		SortReduce<uint32_t,uint32_t>* sr = new SortReduce<uint32_t,uint32_t>(conf);
-		SortReduce<uint32_t,uint32_t>::IoEndpoint* ep = sr->GetEndpoint(true);
+		SortReduce<uint32_t,wid_t>* sr = new SortReduce<uint32_t,wid_t>(conf);
+		SortReduce<uint32_t,wid_t>::IoEndpoint* ep = sr->GetEndpoint(true);
 		edge_process->SetSortReduceEndpoint(ep);
 		for ( int i = 0; i < max_edgeproc_thread_count; i++ ) {
 			//FIXME this is inefficient...
@@ -128,22 +115,22 @@ int main(int argc, char** argv) {
 		edge_process->Start();
 
 		if ( iteration == 0 ) {
-			for ( size_t i = 0; i < vertex_count; i++ ) {
-				edge_process->SourceVertex((uint32_t)i,*(uint32_t*)&init_val, true);
+			for ( size_t i = 0; i < R; i++ ) {
+				uint32_t v = rand()%vertex_count;
+				edge_process->SourceVertex(v, 1, true);
 			}
 		} else {
-			// TODO subgraph selection needs row-compresed file.
-			SortReduceUtils::FileKvReader<uint32_t,uint32_t>* reader = new SortReduceUtils::FileKvReader<uint32_t,uint32_t>("vertex_data.dat", conf);
+			int fd = vertex_values->OpenActiveFile(iteration-1);
+			SortReduceUtils::FileKvReader<uint32_t,uint32_t>* reader = new SortReduceUtils::FileKvReader<uint32_t,uint32_t>(fd);
 			std::tuple<uint32_t,uint32_t,bool> res = reader->Next();
-			uint32_t idx = 0;
 			while ( std::get<2>(res) ) {
-				//uint32_t iteration = std::get<0>(res);
-				uint32_t val = std::get<1>(res);
-				edge_process->SourceVertex(idx,val, true);
+				uint32_t key = std::get<0>(res);
+				wid_t val = std::get<1>(res);
+				if( val > 0 ){
+					// printf( "Vertex %d %d\n", key, val );
+					edge_process->SourceVertex(key, val, true);
+				}	
 				res = reader->Next();
-				idx++;
-
-				//printf( "Vertex %lx %lx\n", key, val );
 			}
 			delete reader;
 		}
@@ -167,13 +154,13 @@ int main(int argc, char** argv) {
 
 		
 		start = std::chrono::high_resolution_clock::now();
-		std::tuple<uint32_t,uint32_t,bool> res = sr->Next();
+		std::tuple<uint32_t,wid_t,bool> res = sr->Next();
 		vertex_values->Start();
 		while ( std::get<2>(res) ) {
 			uint32_t key = std::get<0>(res);
-			uint32_t val = std::get<1>(res);
+			wid_t val = std::get<1>(res);
 
-			//printf( "\t\t++ SRR %x %x\n", key, val );
+			printf( "\t\t++ SRR vertex %d : %d walks.\n", key, val );
 			while ( !vertex_values->Update(key,val) ) ;
 
 			res = sr->Next();
@@ -189,13 +176,12 @@ int main(int argc, char** argv) {
 		
 		printf( "\t\t++ Iteration done : %lu ms / %lu ms, Active %ld\n", duration_milli.count(), iteration_duration_milli.count(), active_cnt );
 		if ( active_cnt == 0 ) break;
+		if ( iteration >= L-1 ) break;
 		vertex_values->NextIteration();
 		iteration++;
 
 		delete sr;
 
-		//if ( iteration > 20 ) break;
-		if ( iteration >= 1 ) break;
 	}
 	now = std::chrono::high_resolution_clock::now();
 	duration_milli = std::chrono::duration_cast<std::chrono::milliseconds> (now-start_all);

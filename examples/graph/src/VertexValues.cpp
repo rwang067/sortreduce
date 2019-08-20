@@ -222,6 +222,7 @@ VertexValues<K,V>::Update(K key, V val){
 	}
 */
 
+	// printf("VertexValues:update start: key = %d, val = %d.\n", key, val);
 	
 	size_t buffer_offset = key/m_io_buffer_alloc_items;
 	size_t thread_idx = buffer_offset % (m_cur_thread_count);
@@ -239,12 +240,15 @@ VertexValues<K,V>::Update(K key, V val){
 	kvp.key = key;
 	kvp.val = val;
 	buf[ma_cur_out_idx[thread_idx]++] = kvp;
+	// printf("VertexValues:update, add a kv pair to buf, with key = %d, val = %d.\n", key, val);
 	if ( ma_cur_out_idx[thread_idx]* sizeof(KvPair) > size ) {
 		ma_cur_out_block[thread_idx].valid_bytes = (ma_cur_out_idx[thread_idx]*sizeof(KvPair));
 		//printf( "Pushing to %d\n", thread_idx );
 		maq_req_blocks[thread_idx]->push(ma_cur_out_block[thread_idx]);
 		ma_cur_out_block[thread_idx].valid = false;
 	}
+
+	// printf("VertexValues:update end\n");
 
 	return true;
 
@@ -330,7 +334,7 @@ template <class K, class V>
 void
 VertexValues<K,V>::WorkerThread(int idx) {
 
-	//printf( "VertexValues::WorkerThread spawned %d\n", idx ); fflush(stdout);
+	// printf( "VertexValues::WorkerThread spawned %d\n", idx ); fflush(stdout);
 	io_context_t io_ctx;
 	struct io_event a_events[AIO_DEPTH];
 	struct iocb a_iocb[AIO_DEPTH];
@@ -489,12 +493,13 @@ VertexValues<K,V>::WorkerThread(int idx) {
 
 			ValueItem* pvi = ((ValueItem*)(((uint8_t*)resp_buffer)+internal_offset));
 			ValueItem vi = *pvi;
-			bool is_marked = (vi.iteration == m_cur_iteration);
+			// bool is_marked = (vi.iteration == m_cur_iteration);
+			bool is_marked = true;
 			V final_val = mp_finalize(vi.val, kvp.val);
 
 			bool is_active = mp_is_active(vi.val, final_val, is_marked);
 
-			//printf( "isactive %lx %lx %s %s\n", vi.val, kvp.val, is_marked?"Y":"N", is_active?"Y":"N" );
+			// printf( "isactive %d %d %s %s\n", vi.val, kvp.val, is_marked?"Y":"N", is_active?"Y":"N" );
 
 			if ( is_active ) {
 				vi.val = kvp.val;

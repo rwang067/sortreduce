@@ -54,6 +54,8 @@ int main(int argc, char** argv) {
 	while (!feof(fin)) {
 		if ( textsource == true ) {
 			if( !fgets(line, 256, fint) ) break;
+			// printf("%s",line);
+			if(line[0]=='#') continue;
 			char* from = strtok(line, " \t");
 			char* to = strtok(NULL, " \t");
 
@@ -65,6 +67,7 @@ int main(int argc, char** argv) {
 
 		uint64_t rnode = cur[0];
 		uint64_t redge = cur[1];
+		// printf( " <-- rnode = %ld, redge = %ld, cur_node = %ld\n", rnode, redge, cur_node );
 
 		if ( rnode == redge ) continue;
 		if ( rnode < cur_node ) {
@@ -86,6 +89,8 @@ int main(int argc, char** argv) {
 			if ( file32 ) {
 				uint32_t sedge = (uint32_t)redge;
 				fwrite(&sedge, sizeof(uint32_t), 1, fdat);
+				// printf("    -- >  fdat: &sedge＝%d\n", sedge);
+
 			} else {
 				fwrite(&redge, sizeof(uint64_t), 1, fdat);
 			}
@@ -107,9 +112,10 @@ int main(int argc, char** argv) {
 
 			while (cur_node < rnode) {
 				fwrite(&cur_boff, sizeof(uint64_t), 1, fidx);
+				// printf("    ---- >  fidx: &cur_boff＝%lld\n", cur_boff);
 				cur_node++;
 				//cur_boff+=sizeof(uint64_t);
-				//printf("Node %lx Edge boffset %lx\n", cur_node, cur_boff);
+				// printf("Node %lx Edge boffset %lx\n", cur_node, cur_boff);
 
 			}
 			if ( file32 ) {

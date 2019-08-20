@@ -72,8 +72,11 @@ EdgeProcess<K,V>::AddSortReduceEndpoint(typename SortReduce<K,V>::IoEndpoint* ep
 template <class K, class V>
 void 
 EdgeProcess<K,V>::Start() {
+	// printf("EdgeProcess Start().\n");
 	for ( int i = m_thread_count; i < m_ep_count; i++ ) {
+		// printf("  ma_sr_thread[%d] create begin.\n",i);
 		ma_sr_thread[i] = std::thread(&EdgeProcess<K,V>::WorkerThread,this, i);
+		// printf("  ma_sr_thread[%d] create end.\n",i);
 	}
 	m_thread_count = m_ep_count;
 
@@ -84,29 +87,34 @@ EdgeProcess<K,V>::Start() {
 template <class K, class V>
 void 
 EdgeProcess<K,V>::Finish() {
+	// printf("EdgeProcess Finish().\n");
 	//Send over last buffer
 	m_cur_out_block.valid_bytes = (m_cur_out_idx*sizeof(KvPair));
 	mq_req_blocks->push(m_cur_out_block);
 	m_cur_out_block.valid = false;
 
 	mp_sr_ep->Finish();
+	// printf("  mp_sr_ep->Finish() end.\n");
 
 	// kill all threads
 	m_kill_threads = true;
 	for ( int i = 0; i < m_thread_count; i++ ) {
-		ma_sr_thread[i].join();
+		// printf("  ma_sr_thread[%d].join() begin.\n",i);
+		ma_sr_thread[i].join();/////////////////////begin reading graph......
+		// printf("  ma_sr_thread[%d].join() end.\n",i);
 	}
 	m_thread_count = 0;
 
 	m_kill_threads = false;
 
-	printf( "Index bytes read : %lx\n", m_index_blocks_read*m_buffer_alloc_bytes );
-	printf( "Edge bytes read : %lx\n", m_edge_blocks_read*m_buffer_alloc_bytes);
+	printf( "Index bytes read : %ld\n", m_index_blocks_read*m_buffer_alloc_bytes );
+	printf( "Edge bytes read : %ld\n", m_edge_blocks_read*m_buffer_alloc_bytes);
 }
 
 template <class K, class V>
 inline void
 EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
+	// printf( "Source vertex , key = %d, val = %d\n", (uint32_t)key, (uint32_t)val );
 	if ( m_cur_out_block.valid == false ) {
 		m_cur_out_block = mq_free_block->get();
 		m_cur_out_idx = 0;
@@ -136,7 +144,8 @@ EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
 		pread(m_ridx_fd, mp_idx_buffer, m_buffer_alloc_bytes, byte_offset_aligned);
 		m_idx_buffer_offset = byte_offset_aligned;
 		m_idx_buffer_bytes = m_buffer_alloc_bytes;
-		//printf( "Read new %lx %lx -- %s\n", ret, ((uint64_t*)mp_idx_buffer)[4], strerror(errno ));
+		// printf( "SV-Read new %lx %lx -- %s\n", ret, ((uint64_t*)mp_idx_buffer)[4], strerror(errno ));
+		printf( "  SV-Read new block\n");//%lx %lx -- %s\n", ret, ((uint64_t*)mp_idx_buffer)[4], strerror(errno ));
 
 		m_index_blocks_read++;
 	}
@@ -147,7 +156,7 @@ EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
 	uint64_t edge_bytes = byte_offset_2 - byte_offset_1;
 	uint32_t fanout = (uint32_t)(edge_bytes/edge_element_bytes);
 
-	//printf( "Source vertex %x -- %lx %lx fanout %x\n", key, byte_offset_1, byte_offset_2, fanout );
+	// printf( "Source vertex %d -- %ld %ld fanout %d\n", key, byte_offset_1, byte_offset_2, fanout );
 	//FIXME move this into edge_bytes if edge program relies on edge weight
 	V edgeval = mp_edge_program(key, val, fanout);
 	//K last_neighbor = 0;
@@ -178,7 +187,7 @@ EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
 template <class K, class V>
 void
 EdgeProcess<K,V>::WorkerThread(int idx) {
-	//printf( "EdgeProcess WorkerThread %d started\n", idx );
+	// printf( "EdgeProcess WorkerThread %d started\n", idx );
 
 	size_t idx_buffer_offset = 0;
 	size_t idx_buffer_bytes = 0;
@@ -207,19 +216,22 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 			KvPair kvp = buf[i];
 			K key = kvp.key;
 			V val = kvp.val;
+			printf("  WT : key = %d, val = %d\n", (uint32_t)key, (uint32_t)val);
 
 			if ( (size_t)key > vertex_count ) {
 				printf( "Skipping key %lu because it's >= %lu\n", (size_t)key, vertex_count );
+				exit(0);
 				continue;
 			}
 
 			size_t byte_offset = ((size_t)key)*sizeof(uint64_t);
 			if ( byte_offset < idx_buffer_offset || byte_offset + 2*sizeof(uint64_t) > idx_buffer_offset+idx_buffer_bytes ) {
+				printf( "Reading idx_buffer...\n");
 				size_t byte_offset_aligned = byte_offset&(~0x3ff); // 1 KB alignment
 				pread(m_ridx_fd, idx_buffer, m_buffer_alloc_bytes, byte_offset_aligned);
 				idx_buffer_offset = byte_offset_aligned;
 				idx_buffer_bytes = m_buffer_alloc_bytes;
-				//printf( "Read new %lx %lx -- %s\n", ret, ((uint64_t*)mp_idx_buffer)[4], strerror(errno ));
+				// printf( "WT-Read new %lx %lx -- %s\n", ret, ((uint64_t*)mp_idx_buffer)[4], strerror(errno ));
 				m_index_blocks_read ++;
 			}
 			size_t internal_offset = byte_offset - idx_buffer_offset;
@@ -231,11 +243,44 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 
 			//printf( "Source vertex %x -- %lx %lx fanout %x\n", key, byte_offset_1, byte_offset_2, fanout );
 			//FIXME move this into edge_bytes if edge program relies on edge weight
+			if( fanout >0 ){
+				for(size_t i = 0; i < val; i++){
+					V edgeval = mp_edge_program(key, i, fanout);
+					K index = (K)edgeval;
+					uint64_t edge_offset = byte_offset_1+(index*edge_element_bytes);
+					if ( edge_offset < edge_buffer_offset || edge_offset + edge_element_bytes > edge_buffer_offset+edge_buffer_bytes ) {
+						printf( "Reading edge_buffer....\n");
+						size_t byte_offset_aligned = edge_offset&(~0x3ff); // 1 KB alignment
+						pread(m_matrix_fd, edge_buffer, m_buffer_alloc_bytes, byte_offset_aligned);
+						edge_buffer_offset = byte_offset_aligned;
+						edge_buffer_bytes = m_buffer_alloc_bytes;
+
+						m_edge_blocks_read++;
+					}
+					size_t internal_offset = edge_offset - edge_buffer_offset;
+					//FIXME if the matrix format changes
+					K neighbor = *((K*)(((uint8_t*)edge_buffer)+internal_offset));
+					printf( "Dst vertex %d -- %dth neighbor.\n", (uint32_t)neighbor, (uint32_t)edgeval );
+					
+					//add a walk here.
+					while (!ep->Update(neighbor, 1)) usleep(100);
+				}
+			}else{
+				for(size_t i = 0; i < val; i++){
+					K neighbor = rand()%vertex_count;
+					printf( "Dst vertex %d -- random vertex.\n", (uint32_t)neighbor );
+					
+					//add a walk here.
+					while (!ep->Update(neighbor, 1)) usleep(100);
+				}
+			}
+			/*** 
 			V edgeval = mp_edge_program(key, val, fanout);
 			//K last_neighbor = 0;
 			for ( uint64_t i = 0; i < fanout; i++ ) {
 				uint64_t edge_offset = byte_offset_1+(i*edge_element_bytes);
 				if ( edge_offset < edge_buffer_offset || edge_offset + edge_element_bytes > edge_buffer_offset+edge_buffer_bytes ) {
+					printf( "Reading edge_buffer....\n");
 					size_t byte_offset_aligned = edge_offset&(~0x3ff); // 1 KB alignment
 					pread(m_matrix_fd, edge_buffer, m_buffer_alloc_bytes, byte_offset_aligned);
 					edge_buffer_offset = byte_offset_aligned;
@@ -246,26 +291,27 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 				size_t internal_offset = edge_offset - edge_buffer_offset;
 				//FIXME if the matrix format changes
 				K neighbor = *((K*)(((uint8_t*)edge_buffer)+internal_offset));
-				//printf( "Dst vertex %x -- %x\n", neighbor, edgeval );
-				/*
-				if ( last_neighbor > neighbor ) {
-					printf( "Dst vertex %x\n", neighbor );
-				}
-				last_neighbor = neighbor;
-				*/
+				// printf( "Dst vertex %d -- %d\n", (uint32_t)neighbor, (uint32_t)edgeval );
+				
+				// if ( last_neighbor > neighbor ) {
+				// 	printf( "Dst vertex %x\n", neighbor );
+				// }
+				// last_neighbor = neighbor;
+				
+				
+				//add a walk here.
 				while (!ep->Update(neighbor, edgeval)) usleep(100);
-			}
+			}***/
 		}
 
 		mq_free_block->push(block);
 	}
-
 	ep->Finish();
 
 	free(idx_buffer);
 	free(edge_buffer);
 
-	//printf( "EdgeProcess WorkerThread %d ending\n", idx );
+	// printf( "EdgeProcess WorkerThread %d ending\n", idx );
 }
 
 

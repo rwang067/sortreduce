@@ -23,7 +23,7 @@ SortReduce<K,V>::SortReduce(SortReduceTypes::Config<K,V> *config) {
 	this->m_cur_update_block.valid = false;
 	this->m_cur_update_block.bytes = 0;
 
-	printf( "SortReduce Starting...\n" );
+	// printf( "SortReduce Starting...\n" );
 	if ( !config->quiet ) printf( "Remember to set per-thread open file limit to be larger at /etc/security/limits.conf\n" );
 	
 	//Buffers for in-memory sorting
@@ -47,7 +47,9 @@ SortReduce<K,V>::SortReduce(SortReduceTypes::Config<K,V> *config) {
 
 	mp_block_sorter = new BlockSorter<K,V>(config, mq_temp_files, config->temporary_directory, block_sorter_maximum_threads);
 
+	// printf("manager_thread create start.\n");
 	manager_thread = std::thread(&SortReduce<K,V>::ManagerThread, this);
+	// printf("manager_thread create end.\n");
 }
 
 template <class K, class V>
@@ -233,7 +235,8 @@ SortReduce<K,V>::GetEndpoint(bool input_only) {
 template <class K, class V>
 void
 SortReduce<K,V>::ManagerThread() {
-	//printf( "maximum threads: %d\n", config->maximum_threads );
+	// printf( "ManagerThread start.\n");
+	// printf( "maximum threads: %d\n", config->maximum_threads );
 
 	const size_t reducer_from_mem_fan_in = 32;
 	const size_t reducer_from_mem_fan_in_max = 128;
@@ -595,6 +598,8 @@ SortReduce<K,V>::ManagerThread() {
 		}
 
 	}
+	// printf( "ManagerThread end.\n");
+
 }
 
 template<class K, class V>
