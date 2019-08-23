@@ -13,32 +13,32 @@
 #include "EdgeProcess.h"
 #include "VertexValues.h"
 
-typedef uint32_t wid_t;
+// typedef uint32_t wd_t;
+typedef uint32_t wd_t; // walk data type
 
 //merge walks of a same vertex
-inline wid_t vertex_update(wid_t a, wid_t b) { // a+b
+inline wd_t vertex_update(wd_t a, wd_t b) { // a+b
 	printf( "Vertex_update a: %d b: %d\n", a, b);
-	wid_t ret = a + b;
+	wd_t ret = a + b;
 	return ret;
 }
-inline wid_t edge_program(uint32_t vid, wid_t value, uint32_t fanout) { // value/fanout
+inline wd_t edge_program(uint32_t vid, wd_t value, uint32_t fanout) { // value/fanout
 	
-	wid_t ret = rand()%fanout;
+	// wd_t ret = rand()%fanout;
 	// printf( "Edge-program vid: %d, outd: %d, walk%d forward to %dth neighbor. \n", vid, fanout, value, ret);
 
-	return ret;
+	return value+1;
 }
 
 size_t g_vertex_count = 1;
-inline wid_t finalize_program(wid_t oldval, wid_t val) { /// val*0.85 + 0.15/|V|
-	uint32_t ret = val;
-	return ret;
+inline wd_t finalize_program(wd_t oldval, wd_t val) { /// val*0.85 + 0.15/|V|
+	return val;
 }
 
-inline bool is_active(wid_t old, wid_t newv, bool marked) { // |newv-old| > 0.0001
+inline bool is_active(wd_t old, wd_t newv, bool marked) { // |newv-old| > 0.0001
 	if ( !marked ) return false;
 
-	if(newv > 0) return true;
+	if(newv !=  0) return true;
 	return false;
 }
 
@@ -82,24 +82,25 @@ int main(int argc, char** argv) {
 	//conf->SetManagedBufferSize(1024*1024*4, 256); // 4 GiB
 
 
-	EdgeProcess<uint32_t,wid_t>* edge_process = new EdgeProcess<uint32_t,wid_t>(idx_path, mat_path, &edge_program);
+	EdgeProcess<uint32_t,wd_t>* edge_process = new EdgeProcess<uint32_t,wd_t>(idx_path, mat_path, &edge_program);
 	size_t vertex_count = edge_process->GetVertexCount();
 	printf( "vertex_count = %d \n", vertex_count );
 	g_vertex_count = vertex_count;
-	VertexValues<uint32_t,wid_t>* vertex_values = new VertexValues<uint32_t,wid_t>(tmp_dir, vertex_count, 0, &is_active, &finalize_program, max_vertexval_thread_count);
+	VertexValues<uint32_t,wd_t>* vertex_values = new VertexValues<uint32_t,wd_t>(tmp_dir, vertex_count, 0, &is_active, &finalize_program, max_vertexval_thread_count);
 
 
 
 	int iteration = 0;
 	while ( true ) {
 
-		SortReduceTypes::Config<uint32_t,wid_t>* conf =
-			new SortReduceTypes::Config<uint32_t,wid_t>(tmp_dir, "", max_sr_thread_count);
+		SortReduceTypes::Config<uint32_t,wd_t>* conf =
+			new SortReduceTypes::Config<uint32_t,wd_t>(tmp_dir, "", max_sr_thread_count);
 		conf->quiet = true;
-		conf->SetUpdateFunction(&vertex_update);
+		// conf->SetUpdateFunction(&vertex_update);
+		// conf->SetUpdateFunction(NULL);
 
-		SortReduce<uint32_t,wid_t>* sr = new SortReduce<uint32_t,wid_t>(conf);
-		SortReduce<uint32_t,wid_t>::IoEndpoint* ep = sr->GetEndpoint(true);
+		SortReduce<uint32_t,wd_t>* sr = new SortReduce<uint32_t,wd_t>(conf);
+		SortReduce<uint32_t,wd_t>::IoEndpoint* ep = sr->GetEndpoint(true);
 		edge_process->SetSortReduceEndpoint(ep);
 		for ( int i = 0; i < max_edgeproc_thread_count; i++ ) {
 			//FIXME this is inefficient...
@@ -117,7 +118,8 @@ int main(int argc, char** argv) {
 		if ( iteration == 0 ) {
 			for ( size_t i = 0; i < R; i++ ) {
 				uint32_t v = rand()%vertex_count;
-				edge_process->SourceVertex(v, 1, true);
+				wd_t w = ( (v & 0x3ffff) << 14 ) | (0 & 0x3fff);
+				edge_process->SourceVertex(v, w, true);
 			}
 		} else {
 			int fd = vertex_values->OpenActiveFile(iteration-1);
@@ -125,7 +127,7 @@ int main(int argc, char** argv) {
 			std::tuple<uint32_t,uint32_t,bool> res = reader->Next();
 			while ( std::get<2>(res) ) {
 				uint32_t key = std::get<0>(res);
-				wid_t val = std::get<1>(res);
+				wd_t val = std::get<1>(res);
 				if( val > 0 ){
 					// printf( "Vertex %d %d\n", key, val );
 					edge_process->SourceVertex(key, val, true);
@@ -154,11 +156,11 @@ int main(int argc, char** argv) {
 
 		
 		start = std::chrono::high_resolution_clock::now();
-		std::tuple<uint32_t,wid_t,bool> res = sr->Next();
+		std::tuple<uint32_t,wd_t,bool> res = sr->Next();
 		vertex_values->Start();
 		while ( std::get<2>(res) ) {
 			uint32_t key = std::get<0>(res);
-			wid_t val = std::get<1>(res);
+			wd_t val = std::get<1>(res);
 
 			// printf( "\t\t++ SRR vertex %d : %d walks.\n", key, val );
 			while ( !vertex_values->Update(key,val) ) ;

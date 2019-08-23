@@ -1353,9 +1353,10 @@ SortReduceReducer::ReducerNodeStream<K,V>::WorkerThread() {
 		while (!mp_reader->IsEmpty() && !m_kill) {
 			SortReduceTypes::KvPair<K,V> kvp = mp_reader->GetNext();
 			rcnt++;
-			if ( kvp.key == last_kvp.key ) {
-				last_kvp.val = mp_update(last_kvp.val, kvp.val);
-			} else {
+			// if ( kvp.key == last_kvp.key ) {
+			// 	last_kvp.val = mp_update(last_kvp.val, kvp.val);
+			// } else 
+			{
 				this->EmitKvPair(last_kvp.key, last_kvp.val);
 
 				cnt++;

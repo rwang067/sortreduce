@@ -36,8 +36,9 @@ SortReduce<K,V>::SortReduce(SortReduceTypes::Config<K,V> *config) {
 
 	this->m_config = config;
 	if ( config->update == NULL ) {
-		fprintf(stderr, "ERROR: Update function not supplied\n" );
-		return;
+		printf("Update function not supplied\n");
+		// fprintf(stderr, "ERROR: Update function not supplied\n" );
+		// return;
 	}
 	mq_temp_files = new SortReduceUtils::MutexedQueue<SortReduceTypes::File>();
 
@@ -651,7 +652,7 @@ SortReduce<K,V>::IoEndpoint::Finish() {
 	if ( m_cur_update_block.valid &&  m_cur_update_offset > 0 ) {
 		m_cur_update_block.valid_bytes  = m_cur_update_offset;
 		
-		//printf( "Putting managed block %s\n", m_cur_update_block.managed?"yes":"no" ); fflush(stdout);
+		// printf( "Putting managed block %s\n", m_cur_update_block.managed?"yes":"no" ); fflush(stdout);
 		mp_sortreduce->PutManagedBlock(m_cur_update_block);
 		m_cur_update_block.valid = false;
 		m_cur_update_block.bytes = 0;

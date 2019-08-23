@@ -156,7 +156,7 @@ EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
 	uint64_t edge_bytes = byte_offset_2 - byte_offset_1;
 	uint32_t fanout = (uint32_t)(edge_bytes/edge_element_bytes);
 
-	// printf( "Source vertex %d -- %ld %ld fanout %d\n", key, byte_offset_1, byte_offset_2, fanout );
+	printf( "Source vertex %d -- %ld %ld fanout %d\n", key, byte_offset_1, byte_offset_2, fanout );
 	//FIXME move this into edge_bytes if edge program relies on edge weight
 	V edgeval = mp_edge_program(key, val, fanout);
 	//K last_neighbor = 0;
@@ -172,7 +172,7 @@ EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
 		size_t internal_offset = edge_offset - m_edge_buffer_offset;
 		//FIXME if the matrix format changes
 		K neighbor = *((K*)(((uint8_t*)mp_edge_buffer)+internal_offset));
-		//printf( "Dst vertex %x -- %x\n", neighbor, edgeval );
+		// printf( "Dst vertex %d -- %d\n", neighbor, edgeval );
 		/*
 		if ( last_neighbor > neighbor ) {
 			printf( "Dst vertex %x\n", neighbor );
@@ -243,10 +243,13 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 
 			//printf( "Source vertex %x -- %lx %lx fanout %x\n", key, byte_offset_1, byte_offset_2, fanout );
 			//FIXME move this into edge_bytes if edge program relies on edge weight
-			if( fanout >0 ){
-				for(size_t i = 0; i < val; i++){
-					V edgeval = mp_edge_program(key, i, fanout);
-					K index = (K)edgeval;
+			uint32_t hop = (uint32_t)(val & 0x3fff);
+			// if( hop == iteration ){
+			if( hop >= 0 ){
+				// for(size_t i = 0; i < val; i++){
+				if( fanout >0 ){
+					K index = rand()%fanout;
+					V edgeval = mp_edge_program(key, val, fanout);
 					uint64_t edge_offset = byte_offset_1+(index*edge_element_bytes);
 					if ( edge_offset < edge_buffer_offset || edge_offset + edge_element_bytes > edge_buffer_offset+edge_buffer_bytes ) {
 						// printf( "Reading edge_buffer....\n");
@@ -260,18 +263,16 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 					size_t internal_offset = edge_offset - edge_buffer_offset;
 					//FIXME if the matrix format changes
 					K neighbor = *((K*)(((uint8_t*)edge_buffer)+internal_offset));
-					// printf( "Dst vertex %d -- %dth neighbor.\n", (uint32_t)neighbor, (uint32_t)edgeval );
 					
 					//add a walk here.
-					while (!ep->Update(neighbor, 1)) usleep(100);
-				}
-			}else{
-				for(size_t i = 0; i < val; i++){
+					// printf( "%d --> %d -- %dth neighbor. val = %d\n", (uint32_t)key, (uint32_t)neighbor, (uint32_t)index, (uint32_t)edgeval );
+					while (!ep->Update(neighbor, edgeval)) usleep(100);
+				}else{
 					K neighbor = rand()%vertex_count;
-					// printf( "Dst vertex %d -- random vertex.\n", (uint32_t)neighbor );
+					// printf( "%d --> %d -- random vertex. val = %d\n", (uint32_t)key, (uint32_t)neighbor, (uint32_t)val );
 					
 					//add a walk here.
-					while (!ep->Update(neighbor, 1)) usleep(100);
+					while (!ep->Update(neighbor, val)) usleep(100);
 				}
 			}
 			/*** 

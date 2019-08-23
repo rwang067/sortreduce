@@ -253,6 +253,7 @@ BlockSorterThread<K,V>::SortKV(void* buffer, size_t bytes, V (*update)(V,V)) {
 		}
 		tbuffer[out_size++] = last_kvp;
 	} else {
+		printf("Null update function.\n");
 		out_size = count;
 	}
 
