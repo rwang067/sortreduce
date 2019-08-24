@@ -1,5 +1,5 @@
 # TARGETS=bfs pr bc 
-TARGETS=randomwalks/rawrandomwalks randomwalks/rwd randomwalks/ppr randomwalks/sr
+TARGETS=randomwalks/rawrandomwalks randomwalks/rwd randomwalks/ppr randomwalks/sr randomwalks/gl
 
 SORTREDUCE_INCLUDE=../../include/
 SORTREDUCE_LIB=../../obj/
