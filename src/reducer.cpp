@@ -1265,9 +1265,10 @@ SortReduceReducer::ReducerNode<K,V>::WorkerThread() {
 		while (in_block.last == false && !m_kill) {
 			SortReduceTypes::KvPair<K,V> kvp = ReducerUtils<K,V>::DecodeKvPair(&in_block, &in_off, mp_src, &m_kill);
 			rcnt++;
-			if ( kvp.key == last_kvp.key ) {
-				last_kvp.val = mp_update(last_kvp.val, kvp.val);
-			} else {
+			// if ( kvp.key == last_kvp.key ) {
+			// 	last_kvp.val = mp_update(last_kvp.val, kvp.val);
+			// } else 
+			{
 				this->EmitKv(last_kvp.key, last_kvp.val);
 
 				cnt++;
