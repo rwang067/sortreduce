@@ -1,5 +1,5 @@
 # TARGETS=bfs pr bc 
-TARGETS=rawrandomwalks
+TARGETS=randomwalks/rawrandomwalks randomwalks/rwd randomwalks/ppr randomwalks/sr
 
 SORTREDUCE_INCLUDE=../../include/
 SORTREDUCE_LIB=../../obj/
@@ -22,6 +22,7 @@ $(OUTPUTDIR)/%: %.cpp $(SORTREDUCE_LIB)/libsortreduce.a $(GRAPH_CPP) | $(OUTPUTD
 
 $(OUTPUTDIR):
 	mkdir -p obj
+	mkdir -p obj/randomwalks
 
 clean:
 	rm -rf ./obj/

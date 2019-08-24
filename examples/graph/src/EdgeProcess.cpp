@@ -248,8 +248,10 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 			if( hop >= 0 ){
 				// for(size_t i = 0; i < val; i++){
 				if( fanout >0 ){
-					K index = rand()%fanout;
-					V edgeval = mp_edge_program(key, val, fanout);
+					// K index = rand()%fanout;
+					// V edgeval = mp_edge_program(key, val, fanout);
+					K index = (K)mp_edge_program(key, val, fanout);
+					V edgeval = val+1;
 					uint64_t edge_offset = byte_offset_1+(index*edge_element_bytes);
 					if ( edge_offset < edge_buffer_offset || edge_offset + edge_element_bytes > edge_buffer_offset+edge_buffer_bytes ) {
 						// printf( "Reading edge_buffer....\n");
@@ -268,7 +270,8 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 					// printf( "%d --> %d -- %dth neighbor. val = %d\n", (uint32_t)key, (uint32_t)neighbor, (uint32_t)index, (uint32_t)edgeval );
 					while (!ep->Update(neighbor, edgeval)) usleep(100);
 				}else{
-					K neighbor = rand()%vertex_count;
+					// K neighbor = rand()%vertex_count;
+					K neighbor = (K)mp_edge_program(key, val, fanout);
 					// printf( "%d --> %d -- random vertex. val = %d\n", (uint32_t)key, (uint32_t)neighbor, (uint32_t)val );
 					
 					//add a walk here.

@@ -16,21 +16,27 @@
 // typedef uint32_t wd_t;
 typedef uint32_t wd_t; // walk data type
 
-//merge walks of a same vertex
-inline wd_t vertex_update(wd_t a, wd_t b) { // a+b
-	printf( "Vertex_update a: %d b: %d\n", a, b);
-	wd_t ret = a + b;
-	return ret;
-}
+// //merge walks of a same vertex
+// inline wd_t vertex_update(wd_t a, wd_t b) { // a+b
+// 	printf( "Vertex_update a: %d b: %d\n", a, b);
+// 	wd_t ret = a + b;
+// 	return ret;
+// }
+
+size_t g_vertex_count = 0;
 inline wd_t edge_program(uint32_t vid, wd_t value, uint32_t fanout) { // value/fanout
 	
-	// wd_t ret = rand()%fanout;
+	wd_t ret;
+	if(fanout >0){
+		ret = (wd_t)rand()%fanout;
+	}else{
+		ret = (wd_t)((value >> 14) & 0x3ffff);//sources
+	}
 	// printf( "Edge-program vid: %d, outd: %d, walk%d forward to %dth neighbor. \n", vid, fanout, value, ret);
 
-	return value+1;
+	return ret;
 }
 
-size_t g_vertex_count = 1;
 inline wd_t finalize_program(wd_t oldval, wd_t val) { /// val*0.85 + 0.15/|V|
 	return val;
 }
@@ -54,16 +60,18 @@ int main(int argc, char** argv) {
 	char* idx_path = argv[2]; // path of beg_pos file
 	char* mat_path = argv[3]; // path of csr/csc file
 
-	int R = atoi(argv[4]);
-	int L = atoi(argv[5]);
+	int firstsource = atoi(argv[4]);
+	int numsources = atoi(argv[5]);
+	int R = 2000;
+	int L = 10;
 
 	int max_thread_count = 12;
 	int max_sr_thread_count = 8;
 	int max_vertexval_thread_count = 4;
 	int max_edgeproc_thread_count = 8;
-	// if ( argc > 4 ) {
-	// 	max_thread_count = atoi(argv[4]);
-	// }
+	if ( argc > 6 ) {
+		max_thread_count = atoi(argv[6]);
+	}
 	if ( max_thread_count >= 32 ) {
 		max_sr_thread_count = 28;
 		max_vertexval_thread_count = 8;
@@ -116,10 +124,11 @@ int main(int argc, char** argv) {
 		edge_process->Start();
 
 		if ( iteration == 0 ) {
-			for ( size_t i = 0; i < R; i++ ) {
-				uint32_t v = rand()%vertex_count;
-				wd_t w = ( (v & 0x3ffff) << 14 ) | (0 & 0x3fff);
-				edge_process->SourceVertex(v, w, true);
+			for ( uint32_t v = firstsource; v < firstsource+numsources; v++ ) {
+				for ( size_t i = 0; i < R; i++ ) {
+					wd_t w = ( (v & 0x3ffff) << 14 ) | (0 & 0x3fff);
+					edge_process->SourceVertex(v, w, true);
+				}
 			}
 		} else {
 			int fd = vertex_values->OpenActiveFile(iteration-1);
