@@ -5,6 +5,7 @@
 #include <ctime>
 #include <map>
 #include <tuple>
+#include <fstream>
 
 #include "sortreduce.h"
 #include "filekvreader.h"
@@ -196,7 +197,14 @@ int main(int argc, char** argv) {
 	}
 	now = std::chrono::high_resolution_clock::now();
 	duration_milli = std::chrono::duration_cast<std::chrono::milliseconds> (now-start_all);
-	printf( "\t\t++ All Done! %lu ms\n", duration_milli.count() );
+	// printf( "\t\t++ All Done! %lu ms\n", duration_milli.count() );
+	printf( "\t\t++ All Done! %f s\n", duration_milli.count()/1000.0 );
+
+	std::string statistic_filename = "grafsoft.statistics";
+	std::ofstream ofs;
+	ofs.open(statistic_filename.c_str(), std::ofstream::out | std::ofstream::app );
+	ofs << duration_milli.count()/1000.0 << std::endl;
+	ofs.close();
 
 	exit(0);
 }
