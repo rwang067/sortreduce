@@ -145,7 +145,7 @@ EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
 		m_idx_buffer_offset = byte_offset_aligned;
 		m_idx_buffer_bytes = m_buffer_alloc_bytes;
 		// printf( "SV-Read new %lx %lx -- %s\n", ret, ((uint64_t*)mp_idx_buffer)[4], strerror(errno ));
-		printf( "  SV-Read new block\n");//%lx %lx -- %s\n", ret, ((uint64_t*)mp_idx_buffer)[4], strerror(errno ));
+		// printf( "  SV-Read new block\n");//%lx %lx -- %s\n", ret, ((uint64_t*)mp_idx_buffer)[4], strerror(errno ));
 
 		m_index_blocks_read++;
 	}
@@ -156,7 +156,43 @@ EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
 	uint64_t edge_bytes = byte_offset_2 - byte_offset_1;
 	uint32_t fanout = (uint32_t)(edge_bytes/edge_element_bytes);
 
-	printf( "Source vertex %d -- %ld %ld fanout %d\n", key, byte_offset_1, byte_offset_2, fanout );
+	// printf( "Source vertex %d -- %ld %ld fanout %d\n", key, byte_offset_1, byte_offset_2, fanout );
+	//FIXME move this into edge_bytes if edge program relies on edge weight
+	uint32_t hop = (uint32_t)(val & 0x3fff);
+	// if( hop == iteration ){
+	if( hop >= 0 ){
+		// for(size_t i = 0; i < val; i++){
+		V edgeval = val+1;
+		if( fanout >0 ){
+			// K index = rand()%fanout;
+			// V edgeval = mp_edge_program(key, val, fanout);
+			K index = (K)mp_edge_program(key, val, fanout);
+
+			uint64_t edge_offset = byte_offset_1+(index*edge_element_bytes);
+			if ( edge_offset < m_edge_buffer_offset || edge_offset + edge_element_bytes > m_edge_buffer_offset+m_edge_buffer_bytes ) {
+				size_t byte_offset_aligned = edge_offset&(~0x3ff); // 1 KB alignment
+				pread(m_matrix_fd, mp_edge_buffer, m_buffer_alloc_bytes, byte_offset_aligned);
+				m_edge_blocks_read++;
+				m_edge_buffer_offset = byte_offset_aligned;
+				m_edge_buffer_bytes = m_buffer_alloc_bytes;
+			}
+			size_t internal_offset = edge_offset - m_edge_buffer_offset;
+			//FIXME if the matrix format changes
+			K neighbor = *((K*)(((uint8_t*)mp_edge_buffer)+internal_offset));
+			// printf( "Dst vertex %d -- %d\n", neighbor, edgeval );
+
+			if ( write ) while (!mp_sr_ep->Update(neighbor, edgeval)) usleep(100);
+		}else{
+			// K neighbor = rand()%vertex_count;
+			K neighbor = (K)mp_edge_program(key, val, fanout);
+			// printf( "%d --> %d -- random vertex. val = %d\n", (uint32_t)key, (uint32_t)neighbor, (uint32_t)val );
+			
+			//add a walk here.
+			while (!mp_sr_ep->Update(neighbor, edgeval)) usleep(100);
+		}
+	}
+	
+	/***
 	//FIXME move this into edge_bytes if edge program relies on edge weight
 	V edgeval = mp_edge_program(key, val, fanout);
 	//K last_neighbor = 0;
@@ -173,15 +209,15 @@ EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
 		//FIXME if the matrix format changes
 		K neighbor = *((K*)(((uint8_t*)mp_edge_buffer)+internal_offset));
 		// printf( "Dst vertex %d -- %d\n", neighbor, edgeval );
-		/*
-		if ( last_neighbor > neighbor ) {
-			printf( "Dst vertex %x\n", neighbor );
-		}
-		last_neighbor = neighbor;
-		*/
+		
+		// if ( last_neighbor > neighbor ) {
+		// 	printf( "Dst vertex %x\n", neighbor );
+		// }
+		// last_neighbor = neighbor;
+		
 		if ( write ) while (!mp_sr_ep->Update(neighbor, edgeval)) usleep(100);
 
-	}
+	}***/
 
 }
 template <class K, class V>
@@ -247,11 +283,11 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 			// if( hop == iteration ){
 			if( hop >= 0 ){
 				// for(size_t i = 0; i < val; i++){
+				V edgeval = val+1;
 				if( fanout >0 ){
 					// K index = rand()%fanout;
 					// V edgeval = mp_edge_program(key, val, fanout);
 					K index = (K)mp_edge_program(key, val, fanout);
-					V edgeval = val+1;
 					uint64_t edge_offset = byte_offset_1+(index*edge_element_bytes);
 					if ( edge_offset < edge_buffer_offset || edge_offset + edge_element_bytes > edge_buffer_offset+edge_buffer_bytes ) {
 						// printf( "Reading edge_buffer....\n");
@@ -275,7 +311,7 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 					// printf( "%d --> %d -- random vertex. val = %d\n", (uint32_t)key, (uint32_t)neighbor, (uint32_t)val );
 					
 					//add a walk here.
-					while (!ep->Update(neighbor, val)) usleep(100);
+					while (!ep->Update(neighbor, edgeval)) usleep(100);
 				}
 			}
 			/*** 
