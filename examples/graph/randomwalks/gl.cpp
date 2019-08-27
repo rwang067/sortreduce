@@ -17,12 +17,12 @@
 // typedef uint32_t wd_t;
 typedef uint32_t wd_t; // walk data type
 
-// //merge walks of a same vertex
-// inline wd_t vertex_update(wd_t a, wd_t b) { // a+b
-// 	printf( "Vertex_update a: %d b: %d\n", a, b);
-// 	wd_t ret = a + b;
-// 	return ret;
-// }
+//merge walks of a same vertex
+inline wd_t vertex_update(wd_t a, wd_t b) { // a+b
+	// printf( "Vertex_update a: %d b: %d\n", a, b);
+	wd_t ret = a + b;
+	return ret;
+}
 
 size_t g_vertex_count = 0;
 inline wd_t edge_program(uint32_t vid, wd_t value, uint32_t fanout) { // value/fanout
@@ -102,8 +102,7 @@ int main(int argc, char** argv) {
 		SortReduceTypes::Config<uint32_t,wd_t>* conf =
 			new SortReduceTypes::Config<uint32_t,wd_t>(tmp_dir, "", max_sr_thread_count);
 		conf->quiet = true;
-		// conf->SetUpdateFunction(&vertex_update);
-		// conf->SetUpdateFunction(NULL);
+		conf->SetUpdateFunction(&vertex_update);
 
 		SortReduce<uint32_t,wd_t>* sr = new SortReduce<uint32_t,wd_t>(conf);
 		SortReduce<uint32_t,wd_t>::IoEndpoint* ep = sr->GetEndpoint(true);
@@ -137,6 +136,13 @@ int main(int argc, char** argv) {
 				if( val > 0 ){
 					// printf( "Vertex %d %d\n", key, val );
 					edge_process->SourceVertex(key, val, true);
+					if(iteration == L-1){
+						edge_process->SourceVertex(vertex_count, 1, true);
+						uint32_t source = (val >> 14) & 0x3ffff;
+						if(key == source){
+							edge_process->SourceVertex(vertex_count+1, 1, true);
+						}
+					}
 				}	
 				res = reader->Next();
 			}
@@ -168,7 +174,8 @@ int main(int argc, char** argv) {
 			uint32_t key = std::get<0>(res);
 			wd_t val = std::get<1>(res);
 
-			// printf( "\t\t++ SRR vertex %d : %d walks.\n", key, val );
+			// if( key >= vertex_count )
+			// 	printf( "\t\t++ SRR vertex %d : %d walks.\n", key, val );
 			while ( !vertex_values->Update(key,val) ) ;
 
 			res = sr->Next();

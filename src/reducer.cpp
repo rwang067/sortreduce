@@ -1,6 +1,7 @@
 #include "reducer.h"
 #include "utils.h"
 #include "types.h"
+
 /*************
  TODO: 
  rewrite StreamFileWriterNode using FileWriterNode
@@ -1183,7 +1184,7 @@ SortReduceReducer::MergerNode<K,V>::WorkerThreadN() {
 		if ( mp_update == NULL ) {
 			this->EmitKvPair(kvp.key, kvp.val);
 		} else {
-			if ( last_kvp.key == kvp.key ) {
+			if ( kvp.key >= 4847571 && last_kvp.key == kvp.key ) {
 				last_kvp.val = mp_update(last_kvp.val, kvp.val);
 			} else {
 				this->EmitKvPair(last_kvp.key, last_kvp.val);
@@ -1265,10 +1266,9 @@ SortReduceReducer::ReducerNode<K,V>::WorkerThread() {
 		while (in_block.last == false && !m_kill) {
 			SortReduceTypes::KvPair<K,V> kvp = ReducerUtils<K,V>::DecodeKvPair(&in_block, &in_off, mp_src, &m_kill);
 			rcnt++;
-			// if ( kvp.key == last_kvp.key ) {
-			// 	last_kvp.val = mp_update(last_kvp.val, kvp.val);
-			// } else 
-			{
+			if ( kvp.key >= 4847571 && kvp.key == last_kvp.key ) {
+				last_kvp.val = mp_update(last_kvp.val, kvp.val);
+			} else {
 				this->EmitKv(last_kvp.key, last_kvp.val);
 
 				cnt++;
@@ -1354,10 +1354,9 @@ SortReduceReducer::ReducerNodeStream<K,V>::WorkerThread() {
 		while (!mp_reader->IsEmpty() && !m_kill) {
 			SortReduceTypes::KvPair<K,V> kvp = mp_reader->GetNext();
 			rcnt++;
-			// if ( kvp.key == last_kvp.key ) {
-			// 	last_kvp.val = mp_update(last_kvp.val, kvp.val);
-			// } else 
-			{
+			if ( kvp.key >= 4847571 && kvp.key == last_kvp.key ) {
+				last_kvp.val = mp_update(last_kvp.val, kvp.val);
+			} else {
 				this->EmitKvPair(last_kvp.key, last_kvp.val);
 
 				cnt++;
@@ -1532,7 +1531,7 @@ SortReduceReducer::StreamMergeReducer_SinglePriority<K,V>::WorkerThread() {
 			first_kvp = false;
 		} else {
 
-			if ( last_key == kvp.key ) {
+			if ( kvp.key >= 4847571 && last_key == kvp.key ) {
 				last_val = this->mp_update(last_val, kvp.val);
 			} else {
 			/*

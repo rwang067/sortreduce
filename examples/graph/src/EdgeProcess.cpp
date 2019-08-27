@@ -114,6 +114,14 @@ EdgeProcess<K,V>::Finish() {
 template <class K, class V>
 inline void
 EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
+
+	size_t vertex_count = this->GetVertexCount();
+
+	if(key >= vertex_count){
+		while (!mp_sr_ep->Update(key, val)) usleep(100);
+		return;
+	}
+
 	// printf( "Source vertex , key = %d, val = %d\n", (uint32_t)key, (uint32_t)val );
 	if ( m_cur_out_block.valid == false ) {
 		m_cur_out_block = mq_free_block->get();
@@ -135,6 +143,8 @@ EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
 		}
 		return;
 	}
+
+
 
 	// If all other threads are busy, do it here
 	size_t edge_element_bytes = sizeof(K);
@@ -181,7 +191,10 @@ EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
 			K neighbor = *((K*)(((uint8_t*)mp_edge_buffer)+internal_offset));
 			// printf( "Dst vertex %d -- %d\n", neighbor, edgeval );
 
-			if ( write ) while (!mp_sr_ep->Update(neighbor, edgeval)) usleep(100);
+			if ( write ){
+				while (!mp_sr_ep->Update(neighbor, edgeval)) usleep(100);
+				// while (!mp_sr_ep->Update(neighbor+vertex_count, 1)) usleep(100);
+			}	
 		}else{
 			// K neighbor = rand()%vertex_count;
 			K neighbor = (K)mp_edge_program(key, val, fanout);
@@ -189,6 +202,7 @@ EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
 			
 			//add a walk here.
 			while (!mp_sr_ep->Update(neighbor, edgeval)) usleep(100);
+			// while (!mp_sr_ep->Update(neighbor+vertex_count, 1)) usleep(100);
 		}
 	}
 	
@@ -254,9 +268,10 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 			V val = kvp.val;
 			// printf("  WT : key = %d, val = %d\n", (uint32_t)key, (uint32_t)val);
 
-			if ( (size_t)key > vertex_count ) {
-				printf( "Skipping key %lu because it's >= %lu\n", (size_t)key, vertex_count );
-				exit(0);
+			if ( (size_t)key >= vertex_count ) {
+				// printf( "Skipping key %lu because it's >= %lu\n", (size_t)key, vertex_count );
+				// exit(0);
+				while (!ep->Update(key, val)) usleep(100);
 				continue;
 			}
 
@@ -305,6 +320,7 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 					//add a walk here.
 					// printf( "%d --> %d -- %dth neighbor. val = %d\n", (uint32_t)key, (uint32_t)neighbor, (uint32_t)index, (uint32_t)edgeval );
 					while (!ep->Update(neighbor, edgeval)) usleep(100);
+					// while (!ep->Update(neighbor+vertex_count, 1)) usleep(100);
 				}else{
 					// K neighbor = rand()%vertex_count;
 					K neighbor = (K)mp_edge_program(key, val, fanout);
@@ -312,6 +328,7 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 					
 					//add a walk here.
 					while (!ep->Update(neighbor, edgeval)) usleep(100);
+					// while (!ep->Update(neighbor+vertex_count, 1)) usleep(100);
 				}
 			}
 			/*** 

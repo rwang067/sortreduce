@@ -6,6 +6,7 @@
 #include <map>
 #include <tuple>
 #include <fstream>
+#include <cmath>
 
 #include "sortreduce.h"
 #include "filekvreader.h"
@@ -18,11 +19,11 @@
 typedef uint32_t wd_t; // walk data type
 
 // //merge walks of a same vertex
-// inline wd_t vertex_update(wd_t a, wd_t b) { // a+b
-// 	printf( "Vertex_update a: %d b: %d\n", a, b);
-// 	wd_t ret = a + b;
-// 	return ret;
-// }
+inline wd_t vertex_update(wd_t a, wd_t b) { // a+b
+	printf( "Vertex_update a: %d b: %d\n", a, b);
+	wd_t ret = a + b;
+	return ret;
+}
 
 size_t g_vertex_count = 0;
 inline wd_t edge_program(uint32_t vid, wd_t value, uint32_t fanout) { // value/fanout
@@ -63,7 +64,7 @@ int main(int argc, char** argv) {
 
 	int a = atoi(argv[4]);
 	int b = atoi(argv[5]);
-	int R = 1600;
+	int R = 1000;
 	int L = 11;
 
 	int max_thread_count = 12;
@@ -97,7 +98,8 @@ int main(int argc, char** argv) {
 	g_vertex_count = vertex_count;
 	VertexValues<uint32_t,wd_t>* vertex_values = new VertexValues<uint32_t,wd_t>(tmp_dir, vertex_count, 0, &is_active, &finalize_program, max_vertexval_thread_count);
 
-
+	uint32_t* path_from_a = (uint32_t*)malloc(R*L*sizeof(uint32_t));
+	uint32_t* path_from_b = (uint32_t*)malloc(R*L*sizeof(uint32_t));
 
 	int iteration = 0;
 	while ( true ) {
@@ -105,8 +107,7 @@ int main(int argc, char** argv) {
 		SortReduceTypes::Config<uint32_t,wd_t>* conf =
 			new SortReduceTypes::Config<uint32_t,wd_t>(tmp_dir, "", max_sr_thread_count);
 		conf->quiet = true;
-		// conf->SetUpdateFunction(&vertex_update);
-		// conf->SetUpdateFunction(NULL);
+		conf->SetUpdateFunction(&vertex_update);
 
 		SortReduce<uint32_t,wd_t>* sr = new SortReduce<uint32_t,wd_t>(conf);
 		SortReduce<uint32_t,wd_t>::IoEndpoint* ep = sr->GetEndpoint(true);
@@ -126,12 +127,14 @@ int main(int argc, char** argv) {
 
 		if ( iteration == 0 ) {
 			for ( size_t i = 0; i < R; i++ ) {
-				wd_t w = ( (a & 0x3ffff) << 14 ) | (0 & 0x3fff);
+				wd_t w = ( (a & 0x3ffff) << 14 ) | (i*L & 0x3fff);
 				edge_process->SourceVertex(a, w, true);
+				path_from_a[i*L] = a;
 			}
 			for ( size_t i = 0; i < R; i++ ) {
-				wd_t w = ( (b & 0x3ffff) << 14 ) | (0 & 0x3fff);
+				wd_t w = ( (b & 0x3ffff) << 14 ) | (i*L & 0x3fff);
 				edge_process->SourceVertex(b, w, true);
+				path_from_b[i*L] = b;
 			}
 		} else {
 			int fd = vertex_values->OpenActiveFile(iteration-1);
@@ -143,6 +146,15 @@ int main(int argc, char** argv) {
 				if( val > 0 ){
 					// printf( "Vertex %d %d\n", key, val );
 					edge_process->SourceVertex(key, val, true);
+					uint32_t hop = val & 0x3fff;
+					uint32_t source = (val >> 14) & 0x3ffff;
+					if(source == a){
+						path_from_a[hop] = key;
+					}else if(source == b){
+						path_from_b[hop] = key;
+					}else{
+						printf( "Wrong source, %d\n", source );
+					}
 				}	
 				res = reader->Next();
 			}
@@ -197,6 +209,22 @@ int main(int argc, char** argv) {
 		delete sr;
 
 	}
+
+	float simrank = 0;
+	for( uint32_t i = 0; i < R; i++ ){
+		for( uint32_t j = 0; j < R; j++ ){
+			for( uint32_t l = 0; l < L; l++ ){
+				// std::cout << i << " " << j << " " << l << " : " << walksfroma[i*R+l] << " " << walksfromb[j*R+l] << std::endl;
+				if( path_from_a[i*L+l] == path_from_b[j*L+l] && path_from_a[i*L+l] != 0xffffffff ){
+					simrank += (1.0/(R*R))*pow(0.8, l);
+					// std::cout << i << " " << j << " " << l << " " << walksfroma[i*L+l] << " " << simrank << std::endl;
+					break;
+				}
+			}
+		}
+	}
+	printf( "\t\t++ SimRank of %d and %d = %f.\n", a, b, simrank );
+		
 	now = std::chrono::high_resolution_clock::now();
 	duration_milli = std::chrono::duration_cast<std::chrono::milliseconds> (now-start_all);
 	// printf( "\t\t++ All Done! %lu ms\n", duration_milli.count() );
