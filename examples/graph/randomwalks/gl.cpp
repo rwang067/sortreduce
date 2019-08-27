@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
 
 	EdgeProcess<uint32_t,wd_t>* edge_process = new EdgeProcess<uint32_t,wd_t>(idx_path, mat_path, &edge_program);
 	size_t vertex_count = edge_process->GetVertexCount();
-	printf( "vertex_count = %d \n", vertex_count );
+	printf( "vertex_count = %ld \n", vertex_count );
 	g_vertex_count = vertex_count;
 	VertexValues<uint32_t,wd_t>* vertex_values = new VertexValues<uint32_t,wd_t>(tmp_dir, vertex_count, 0, &is_active, &finalize_program, max_vertexval_thread_count);
 

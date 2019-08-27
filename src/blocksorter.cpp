@@ -244,7 +244,7 @@ BlockSorterThread<K,V>::SortKV(void* buffer, size_t bytes, V (*update)(V,V)) {
 		for (size_t i = 1; i < count; i++ ) {
 			KvPair c = tbuffer[i];
 			// printf("Kvpair[%d] : key = %d, val = %d.\n", i, (uint32_t)c.key, (uint32_t)c.val);
-			if ( c.key >= 2147483648 && last_kvp.key == c.key ) {
+			if ( c.key >= 3563602789 && last_kvp.key == c.key ) {
 				last_kvp.val = update(last_kvp.val, c.val);
 			} else {
 				tbuffer[out_size++] = last_kvp;
