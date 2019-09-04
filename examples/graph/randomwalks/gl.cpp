@@ -14,6 +14,8 @@
 #include "EdgeProcess.h"
 #include "VertexValues.h"
 
+//3563602789
+
 // typedef uint32_t wd_t;
 typedef uint32_t wd_t; // walk data type
 

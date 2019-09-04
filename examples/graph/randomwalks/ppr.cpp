@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
 	srand(time(0));
 
 	if ( argc < 6 ) {
-		fprintf(stderr, "usage: %s directory ridx matrix nwalks nsteps.\n", argv[0] );
+		fprintf(stderr, "usage: %s directory ridx matrix firstsource numsources.\n", argv[0] );
 		exit(1);
 	}
 
@@ -174,7 +174,7 @@ int main(int argc, char** argv) {
 			uint32_t key = std::get<0>(res);
 			wd_t val = std::get<1>(res);
 
-			if( key >= vertex_count && val > 50 )
+			if( iteration == L-1 && key >= vertex_count && val > 20*numsources )
 				printf( "\t\t++ SRR vertex %d : %d walks.\n", key-vertex_count, val );
 			while ( !vertex_values->Update(key,val) ) ;
 
