@@ -14,7 +14,8 @@
 #include "EdgeProcess.h"
 #include "VertexValues.h"
 
-//3563602789
+// N of Crawl = 3563602789
+// N of Friendster = 68349467
 
 // typedef uint32_t wd_t;
 typedef uint32_t wd_t; // walk data type
