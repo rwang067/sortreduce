@@ -53,8 +53,8 @@ inline bool is_active(wd_t old, wd_t newv, bool marked) { // |newv-old| > 0.0001
 int main(int argc, char** argv) {
 	srand(time(0));
 
-	if ( argc < 6 ) {
-		fprintf(stderr, "usage: %s directory ridx matrix firstsource numsources.\n", argv[0] );
+	if ( argc < 8 ) {
+		fprintf(stderr, "usage: %s directory ridx matrix firstsource numsources walkspersource nsteps.\n", argv[0] );
 		exit(1);
 	}
 
@@ -64,15 +64,15 @@ int main(int argc, char** argv) {
 
 	int firstsource = atoi(argv[4]);
 	int numsources = atoi(argv[5]);
-	int R = 2000;
-	int L = 10;
+	int R = atoi(argv[6]);//2000;
+	int L = atoi(argv[7]);//10;
 
 	int max_thread_count = 12;
 	int max_sr_thread_count = 8;
 	int max_vertexval_thread_count = 4;
 	int max_edgeproc_thread_count = 8;
-	if ( argc > 6 ) {
-		max_thread_count = atoi(argv[6]);
+	if ( argc > 8 ) {
+		max_thread_count = atoi(argv[8]);
 	}
 	if ( max_thread_count >= 32 ) {
 		max_sr_thread_count = 28;
