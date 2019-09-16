@@ -34,7 +34,7 @@ inline wd_t edge_program(uint32_t vid, wd_t value, uint32_t fanout) { // value/f
 	}else{
 		ret = (wd_t)((value >> 14) & 0x3ffff);//sources
 	}
-	// printf( "Edge-program vid: %d, outd: %d, walk%d forward to %dth neighbor. \n", vid, fanout, value, ret);
+	// printf( "Edge-program vid: %d, outd: %d, walk_%d forward to %dth neighbor. \n", vid, fanout, value, ret);
 
 	return ret;
 }
@@ -83,6 +83,8 @@ int main(int argc, char** argv) {
 		max_vertexval_thread_count = 8;
 		max_edgeproc_thread_count = 8;
 	}
+
+	printf( "firstsource = %d, numsources = %d, walkspersource = %d, nsteps = %d \n", firstsource, numsources, R, L );
 		
 	std::chrono::high_resolution_clock::time_point start_all;
 	start_all = std::chrono::high_resolution_clock::now();
@@ -190,7 +192,10 @@ int main(int argc, char** argv) {
 		iteration_duration_milli = std::chrono::duration_cast<std::chrono::milliseconds> (now-iteration_start);
 		
 		printf( "\t\t++ Iteration done : %lu ms / %lu ms, Active %ld\n", duration_milli.count(), iteration_duration_milli.count(), active_cnt );
-		if ( active_cnt == 0 ) break;
+		if ( active_cnt == 0 ) {
+			printf( "\t\t Warining : No active vertices with walks left. active_cnt = %d. \n", active_cnt );
+			break;
+		}
 		if ( iteration >= L-1 ) break;
 		vertex_values->NextIteration();
 		iteration++;

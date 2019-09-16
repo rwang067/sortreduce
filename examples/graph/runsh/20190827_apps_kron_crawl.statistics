@@ -1,0 +1,101 @@
+2019.8.25 compare with GraFSoft by apps in SSD 64GB R730
+app = PersonalizedPageRank, dataset = Kron31 from echo
+R = 2000, L = 10, choose prob=0.2 from echo
+45.46
+44.864
+45.974
+44.809
+51.762
+app = SimRank, dataset = Kron31 from echo
+R = 2000, L = 11, choose prob=0.2 from echo
+38.65
+19.648
+13.634
+18
+13.668
+app = Graphlet, dataset = Kron31 from echo
+R = 100000, L = 4, choose prob=0.2 from echo
+64.596
+102.178
+120.895
+120.681
+135.182
+app = RandomWalkDomination, dataset = Kron31 from echo
+R = 1×N, L = 6, choose prob=0.2 from echo
+2019.8.25 compare with GraFSoft by apps in SSD 64GB R730
+Raw Random walks from echo, L = 10, vary R from 10^3 to 10^10
+app = Graphlet, dataset = Crawl from echo
+R =  1000 , fixed L = 10, from echo
+2019.8.25 compare with GraFSoft by apps in SSD 64GB R730
+Raw Random walks from echo, L = 10, vary R from 10^3 to 10^10
+app = Graphlet, dataset = Crawl from echo
+R =  1000 , fixed L = 10, from echo
+18.213
+17.528
+17.398
+17.45
+17.452
+R =  10000 , fixed L = 10, from echo
+56.782
+57.186
+56.804
+56.813
+56.756
+R =  100000 , fixed L = 10, from echo
+173.154
+174.901
+175.254
+173.924
+176.79
+R =  1000000 , fixed L = 10, from echo
+681.151
+694.522
+691.818
+695.623
+734.841
+R =  10000000 , fixed L = 10, from echo
+2565.65
+2422.42
+2420.73
+2410.11
+4298.09
+R =  100000000 , fixed L = 10, from echo
+2019.8.25 compare with GraFSoft by apps in SSD 64GB R730
+Raw Random walks from echo, L = 10, vary R from 10^3 to 10^10
+app = Graphlet, dataset = Crawl from echo
+R =  100000000 , fixed L = 10, from echo
+2019.8.25 compare with GraFSoft by apps in SSD 64GB R730
+Raw Random walks from echo, R = 100000, vary L from 2^2 to 2^12
+app = Graphlet, dataset = Crawl from echo
+L =  4 , fixed R = 10^5, from echo
+2019.8.25 compare with GraFSoft by apps in SSD 64GB R730
+Raw Random walks from echo, R = 100000, vary L from 2^2 to 2^12
+app = Graphlet, dataset = Crawl from echo
+L =  4 , fixed R = 10^5, from echo
+79.852
+77.278
+L =  8 , fixed R = 10^5, from echo
+139.807
+140.25
+L =  16 , fixed R = 10^5, from echo
+264.684
+284.843
+L =  32 , fixed R = 10^5, from echo
+549.235
+547.294
+L =  64 , fixed R = 10^5, from echo
+1045.25
+1052.34
+L =  128 , fixed R = 10^5, from echo
+2108.54
+2072.54
+L =  256 , fixed R = 10^5, from echo
+4180.07
+2019.8.25 compare with GraFSoft by apps in SSD 64GB R730
+Raw Random walks from echo, L = 10, vary R from 10^3 to 10^10
+app = Graphlet, dataset = Crawl from echo
+R =  100000000 , fixed L = 10, from echo
+////////////////////////
+18.195
+/////////////////////////////////////
+
