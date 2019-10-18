@@ -131,7 +131,7 @@ int main(int argc, char** argv) {
 				for ( size_t i = 0; i < R; i++ ) {
 					wd_t w = ( (v & 0x3ffff) << 14 ) | (0 & 0x3fff);
 					edge_process->SourceVertex(v, w, true);//walks
-					edge_process->SourceVertex(v+vertex_count, 1, true);//visit times
+					// edge_process->SourceVertex(v+vertex_count, 1, true);//visit times
 				}
 			}
 		} else {
@@ -144,7 +144,9 @@ int main(int argc, char** argv) {
 				if( val > 0 ){
 					// printf( "Vertex %d %d\n", key, val );
 					edge_process->SourceVertex(key, val, true);
-					edge_process->SourceVertex(key+vertex_count, 1, true);//visit times
+					if(key >= 0 && key < vertex_count){
+						edge_process->SourceVertex(key+vertex_count, 1, false);//visit times
+					}
 				}	
 				res = reader->Next();
 			}

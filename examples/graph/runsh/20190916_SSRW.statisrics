@@ -1,0 +1,108 @@
+12.571
+2019.9.16 compare with GraFSoft by single-source RW in Friendster in SSD 64GB R730
+single-source RW from echo, R*10 walks, R vary from 10^0 to 10^7
+app = single-source RW, dataset = Friendster from echo
+R =  1000 , R*10 walks from echo
+0.899
+0.794
+0.806
+0.875
+0.76
+R =  10000 , R*10 walks from echo
+0.79
+0.784
+0.777
+0.781
+0.766
+R =  100000 , R*10 walks from echo
+10.3
+10.137
+10.507
+10.146
+10.151
+R =  1000000 , R*10 walks from echo
+1.856
+1.826
+1.817
+1.785
+1.81
+R =  10000000 , R*10 walks from echo
+131.997
+133.929
+129.363
+128.341
+129.333
+R =  100000000 , R*10 walks from echo
+1006.16
+1017.84
+1024.16
+1772.38
+1013.38
+R =  1000000000 , R*10 walks from echo
+9969.26
+2019.9.16 compare with GraFSoft by single-source RW in Crawl in SSD 64GB R730
+single-source RW from echo, R*10 walks, R vary from 10^0 to 10^7
+app = single-source RW, dataset = Crawl from echo
+R =  1000 , R*10 walks from echo
+15.901
+12.893
+12.47
+12.955
+12.894
+R =  10000 , R*10 walks from echo
+12.574
+12.993
+12.993
+13.04
+13.019
+R =  100000 , R*10 walks from echo
+971.5
+973.846
+975.74
+951.355
+956.403
+R =  1000000 , R*10 walks from echo
+24.642
+14.043
+14.039
+14.05
+14.084
+R =  10000000 , R*10 walks from echo
+
+***********************************************************************************
+
+
+2019.9.16 compare with GraFSoft by single-source RW in Crawl in SSD 64GB R730
+single-source RW from echo, R*10 walks, R vary from 10^0 to 10^7
+app = single-source RW, dataset = Crawl from echo
+R =  1000 , R*10 walks from echo
+17.409
+13.668
+13.68
+13.657
+13.686
+R =  100000 , R*10 walks from echo
+18.956
+19.333
+19.117
+19.173
+18.999
+R =  10000000 , R*10 walks from echo
+80.139
+82.1
+82.365
+80.899
+79.828
+R =  1000000000 , R*10 walks from echo
+2019.9.16 compare with GraFSoft by single-source RW in Crawl in SSD 64GB R730
+single-source RW from echo, R*10 walks, R vary from 10^0 to 10^7
+app = single-source RW, dataset = Crawl from echo
+R =  1000 , R*10 walks from echo
+15.481
+12.874
+12.906
+12.823
+12.916
+R =  100000 , R*10 walks from echo
+960.509
+837.603

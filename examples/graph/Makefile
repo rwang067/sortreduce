@@ -8,7 +8,8 @@ SORTREDUCE_LIB=../../obj/
 GRAPH_SRC=src/
 GRAPH_CPP=$(wildcard $(GRAPH_SRC)/*.cpp)
 
-SRFLAGS=-DKVTYPES1='uint64_t,uint32_t'  -DKVTYPES2='uint32_t,uint32_t' 
+SRFLAGS=-DKVTYPES1='uint32_t,uint32_t' -DKVTYPES2='uint64_t,uint32_t'  
+# SRFLAGS=-DKVTYPES1='uint32_t,uint32_t' -DKVTYPES2='uint32_t,uint64_t'  -DKVTYPES3='uint64_t,uint32_t'  -DKVTYPES4='uint64_t,uint64_t' 
 
 
 OUTPUTDIR=./obj
