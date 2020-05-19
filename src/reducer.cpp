@@ -1341,6 +1341,8 @@ template <class K, class V>
 void
 SortReduceReducer::ReducerNodeStream<K,V>::WorkerThread() {
 
+	printf( "SortReduceReducer WorkerThread start.\n");
+
 	SortReduceTypes::KvPair<K,V> last_kvp = {0};
 
 	uint64_t cnt = 0;

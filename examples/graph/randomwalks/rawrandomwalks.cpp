@@ -17,9 +17,9 @@
 // typedef uint32_t wd_t;
 typedef uint32_t wd_t; // walk data type
 
-// //merge walks of a same vertex
+//merge walks of a same vertex
 // inline wd_t vertex_update(wd_t a, wd_t b) { // a+b
-// 	printf( "Vertex_update a: %d b: %d\n", a, b);
+// 	// printf( "Vertex_update a: %d b: %d\n", a, b);
 // 	wd_t ret = a + b;
 // 	return ret;
 // }

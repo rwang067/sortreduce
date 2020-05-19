@@ -1,0 +1,33 @@
+
+
+run ERROR:
+1. statvfs returns invalid storage capacity! Set storage usage manually via Config
+Solve : cd **/GraFSoft/; mkdir vertex
+
+注意：
+encodeGraFSoft 生成的 ridx 文件，是记录的byte数目；
+GraphWalker 生成的 beg_pos 文件，是记录的边数；
+二者相差4倍，所以想要利用GraphWalker的文件，需修改GraFSoft中源码：
+
+    **/sortreduce/examples/graph/src/EdgeProcess.cpp::166行：
+            // // use encodeGraFSoft
+            // uint64_t byte_offset_1 = *((uint64_t*)(((uint8_t*)mp_idx_buffer)+internal_offset));
+            // uint64_t byte_offset_2 = *((uint64_t*)(((uint8_t*)mp_idx_buffer)+internal_offset+sizeof(uint64_t)));
+            
+            // use GraphWalker file
+            uint64_t byte_offset_1 = *((uint64_t*)(((uint8_t*)mp_idx_buffer)+internal_offset)) * sizeof(uint64_t);
+            uint64_t byte_offset_2 = *((uint64_t*)(((uint8_t*)mp_idx_buffer)+internal_offset+sizeof(uint64_t))) * sizeof(uint64_t);
+
+    **/sortreduce/examples/graph/src/EdgeProcess.cpp::397行：
+            // use encodeGraFSoft
+            // uint64_t byte_offset_1 = *((uint64_t*)(((uint8_t*)idx_buffer)+internal_offset));
+			// uint64_t byte_offset_2 = *((uint64_t*)(((uint8_t*)idx_buffer)+internal_offset+sizeof(uint64_t)));
+
+			//use GraphWalker file
+			uint64_t byte_offset_1 = *((uint64_t*)(((uint8_t*)idx_buffer)+internal_offset)) * sizeof(uint64_t);
+			uint64_t byte_offset_2 = *((uint64_t*)(((uint8_t*)idx_buffer)+internal_offset+sizeof(uint64_t))) * sizeof(uint64_t);
+
+使用 GraphWalker 的文件替代，可以直接制作硬链接（相当于创建文件的另一个入口）：
+ln **/**.beg_pos **/ridx.dat
+ln **/**.csr **/**/matrix.dat
+e.g. Kron30

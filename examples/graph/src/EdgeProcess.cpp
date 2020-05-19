@@ -12,6 +12,7 @@ EdgeProcess<K,V>::EdgeProcess(std::string ridx_path, std::string matrix_path, V(
 	m_ridx_fd = open(ridx_path.c_str(), O_RDONLY|O_DIRECT, S_IRUSR|S_IWUSR);
 	m_matrix_fd = open(matrix_path.c_str(), O_RDONLY|O_DIRECT, S_IRUSR|S_IWUSR);
 	if ( m_ridx_fd < 0 || m_matrix_fd < 0 ) {
+		fprintf(stderr, "m_ridx_fd = %d, m_matrix_fd = %d\n", m_ridx_fd, m_matrix_fd);
 		fprintf(stderr, "ERROR: Graph ridx or matrix file not found\n" );
 	}
 	//mp_idx_buffer = malloc(m_buffer_alloc_bytes);
@@ -154,15 +155,22 @@ EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
 		pread(m_ridx_fd, mp_idx_buffer, m_buffer_alloc_bytes, byte_offset_aligned);
 		m_idx_buffer_offset = byte_offset_aligned;
 		m_idx_buffer_bytes = m_buffer_alloc_bytes;
-		// printf( "SV-Read new %lx %lx -- %s\n", ret, ((uint64_t*)mp_idx_buffer)[4], strerror(errno ));
+		// printf( "SV-Read new idx : %lx  %lx.\n", m_buffer_alloc_bytes, byte_offset_aligned);
+		// printf( "SV-Read new idx %lx %lx -- %s\n", ret, ((uint64_t*)mp_idx_buffer)[4], strerror(errno ));
 		// printf( "  SV-Read new block\n");//%lx %lx -- %s\n", ret, ((uint64_t*)mp_idx_buffer)[4], strerror(errno ));
 
 		m_index_blocks_read++;
 	}
 	size_t internal_offset = byte_offset - m_idx_buffer_offset;
 
-	uint64_t byte_offset_1 = *((uint64_t*)(((uint8_t*)mp_idx_buffer)+internal_offset));
-	uint64_t byte_offset_2 = *((uint64_t*)(((uint8_t*)mp_idx_buffer)+internal_offset+sizeof(uint64_t)));
+	// // use encodeGraFSoft
+	// uint64_t byte_offset_1 = *((uint64_t*)(((uint8_t*)mp_idx_buffer)+internal_offset));
+	// uint64_t byte_offset_2 = *((uint64_t*)(((uint8_t*)mp_idx_buffer)+internal_offset+sizeof(uint64_t)));
+	
+	// use GraphWalker file
+	uint64_t byte_offset_1 = *((uint64_t*)(((uint8_t*)mp_idx_buffer)+internal_offset)) * edge_element_bytes;
+	uint64_t byte_offset_2 = *((uint64_t*)(((uint8_t*)mp_idx_buffer)+internal_offset+sizeof(uint64_t))) * edge_element_bytes;
+
 	uint64_t edge_bytes = byte_offset_2 - byte_offset_1;
 	uint32_t fanout = (uint32_t)(edge_bytes/edge_element_bytes);
 
@@ -185,6 +193,7 @@ EdgeProcess<K,V>::SourceVertex(K key, V val, bool write ) {
 				m_edge_blocks_read++;
 				m_edge_buffer_offset = byte_offset_aligned;
 				m_edge_buffer_bytes = m_buffer_alloc_bytes;
+				// printf( "SV-Read new matrix : %lx  %lx.\n", m_buffer_alloc_bytes, byte_offset_aligned);
 			}
 			size_t internal_offset = edge_offset - m_edge_buffer_offset;
 			//FIXME if the matrix format changes
@@ -282,15 +291,25 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 				pread(m_ridx_fd, idx_buffer, m_buffer_alloc_bytes, byte_offset_aligned);
 				idx_buffer_offset = byte_offset_aligned;
 				idx_buffer_bytes = m_buffer_alloc_bytes;
+				// printf( "WT-Read new idx : %ld  %ld.\n", m_buffer_alloc_bytes, byte_offset_aligned);
 				// printf( "WT-Read new %lx %lx -- %s\n", ret, ((uint64_t*)mp_idx_buffer)[4], strerror(errno ));
 				m_index_blocks_read ++;
 			}
 			size_t internal_offset = byte_offset - idx_buffer_offset;
 
-			uint64_t byte_offset_1 = *((uint64_t*)(((uint8_t*)idx_buffer)+internal_offset));
-			uint64_t byte_offset_2 = *((uint64_t*)(((uint8_t*)idx_buffer)+internal_offset+sizeof(uint64_t)));
+			// // use encodeGraFSoft
+			// uint64_t byte_offset_1 = *((uint64_t*)(((uint8_t*)idx_buffer)+internal_offset));
+			// uint64_t byte_offset_2 = *((uint64_t*)(((uint8_t*)idx_buffer)+internal_offset+sizeof(uint64_t)));
+
+			// use GraphWalker file
+			uint64_t byte_offset_1 = *((uint64_t*)(((uint8_t*)idx_buffer)+internal_offset)) * edge_element_bytes;
+			uint64_t byte_offset_2 = *((uint64_t*)(((uint8_t*)idx_buffer)+internal_offset+sizeof(uint64_t))) * edge_element_bytes;
+
 			uint64_t edge_bytes = byte_offset_2 - byte_offset_1;
 			uint32_t fanout = (uint32_t)(edge_bytes/edge_element_bytes);
+
+			// printf( "WT: byte_offset = %ld,  idx_buffer_offset = %ld, internal_offset = %ld.\n", byte_offset, idx_buffer_offset, internal_offset);
+			// printf( "WT: byte_offset_1 = %ld,  byte_offset_2 = %ld, edge_bytes = %ld, fanout = %d.\n", byte_offset_1, byte_offset_2, edge_bytes, fanout);
 
 			//printf( "Source vertex %x -- %lx %lx fanout %x\n", key, byte_offset_1, byte_offset_2, fanout );
 			//FIXME move this into edge_bytes if edge program relies on edge weight
@@ -304,6 +323,7 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 					// V edgeval = mp_edge_program(key, val, fanout);
 					K index = (K)mp_edge_program(key, val, fanout);
 					uint64_t edge_offset = byte_offset_1+(index*edge_element_bytes);
+					// printf( "WT- index = %d, byte_offset_1 = %ld, edge_offset = %ld.\n", index, byte_offset_1, edge_offset);
 					if ( edge_offset < edge_buffer_offset || edge_offset + edge_element_bytes > edge_buffer_offset+edge_buffer_bytes ) {
 						// printf( "Reading edge_buffer....\n");
 						size_t byte_offset_aligned = edge_offset&(~0x3ff); // 1 KB alignment
@@ -311,14 +331,17 @@ EdgeProcess<K,V>::WorkerThread(int idx) {
 						edge_buffer_offset = byte_offset_aligned;
 						edge_buffer_bytes = m_buffer_alloc_bytes;
 
+						// printf( "WT-Read new matrix : %ld  %ld.\n", m_buffer_alloc_bytes, byte_offset_aligned);
+
 						m_edge_blocks_read++;
 					}
+
 					size_t internal_offset = edge_offset - edge_buffer_offset;
 					//FIXME if the matrix format changes
 					K neighbor = *((K*)(((uint8_t*)edge_buffer)+internal_offset));
 					
 					//add a walk here.
-					// printf( "%d --> %d -- %dth neighbor. val = %d\n", (uint32_t)key, (uint32_t)neighbor, (uint32_t)index, (uint32_t)edgeval );
+					// printf( "((( %d --> %d ))) : %d-th neighbor. val = %d\n", (uint32_t)key, (uint32_t)neighbor, (uint32_t)index, (uint32_t)edgeval );
 					while (!ep->Update(neighbor, edgeval)) usleep(100);
 					// while (!ep->Update(neighbor+vertex_count, 1)) usleep(100);
 				}else{

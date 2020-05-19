@@ -260,10 +260,13 @@ SortReduce<K,V>::ManagerThread() {
 	size_t max_storage_bytes = m_config->max_storage_allocatd_bytes;
 
 	int statvfs_ret =  statvfs(m_config->temporary_directory.c_str(), &fs_stat);
+	// fprintf(stderr, "%s %d \n", m_config->temporary_directory.c_str(), statvfs_ret );
 
 	//FIXME padding
 	size_t fs_avail_bytes = fs_stat.f_bavail * fs_stat.f_bsize * 0.9;
+	// fprintf(stderr, "%d %d %d\n", fs_stat.f_bavail, fs_stat.f_bsize, fs_avail_bytes );
 	if (m_config->max_storage_allocatd_bytes == 0 && ( statvfs_ret != 0 || fs_avail_bytes == 0 ) ) {
+		// fprintf(stderr, "%d %d %d\n", m_config->max_storage_allocatd_bytes, statvfs_ret, fs_avail_bytes );
 		fprintf(stderr, "statvfs returns invalid storage capacity! Set storage usage manually via Config\n" );
 		exit(1);
 	}
